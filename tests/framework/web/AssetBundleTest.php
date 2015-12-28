@@ -66,6 +66,9 @@ class AssetBundleTest extends \yiiunit\TestCase
         }
         $this->assertTrue(rmdir($bundle->basePath . DIRECTORY_SEPARATOR . 'js'));
 
+        $this->assertTrue(unlink($bundle->basePath . DIRECTORY_SEPARATOR . 'somefiles' . DIRECTORY_SEPARATOR . 'file1.txt'));
+        $this->assertTrue(rmdir($bundle->basePath . DIRECTORY_SEPARATOR . 'somefiles'));
+
         $this->assertTrue(rmdir($bundle->basePath));
     }
 
@@ -125,6 +128,31 @@ class AssetBundleTest extends \yiiunit\TestCase
             $publishedFile = $bundle->basePath . DIRECTORY_SEPARATOR . $filename;
             $this->assertFileNotExists($publishedFile);
         }
+        $this->assertTrue(rmdir($bundle->basePath));
+    }
+
+    public function testSourcesPublish_publishOptions_Only()
+    {
+        $view = $this->getView();
+        $am = $view->assetManager;
+
+        $bundle = new TestSourceAsset([
+            'publishOptions' => [
+                'only' => [
+                    'js/*'
+                ]
+            ],
+        ]);
+        $bundle->publish($am);
+
+        $notNeededFilesDir = $bundle->basePath . DIRECTORY_SEPARATOR . 'somefiles';
+        $this->assertFileNotExists($notNeededFilesDir);
+
+        foreach ($bundle->js as $filename) {
+            $publishedFile = $bundle->basePath . DIRECTORY_SEPARATOR . $filename;
+            $this->assertTrue(unlink($publishedFile));
+        }
+        $this->assertTrue(rmdir($bundle->basePath . DIRECTORY_SEPARATOR . 'js'));
         $this->assertTrue(rmdir($bundle->basePath));
     }
 
