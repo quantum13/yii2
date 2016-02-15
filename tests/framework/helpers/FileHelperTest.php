@@ -174,6 +174,58 @@ class FileHelperTest extends TestCase
         $this->assertFileMode($fileMode, $dstDirName . DIRECTORY_SEPARATOR . $fileName, 'Copied file has wrong mode!');
     }
 
+    public function testCopyDirectoryWithOnly()
+    {
+        $srcDirName = 'test_src_dir';
+        $files = [
+            'dir1' => [
+                'file1.ext1' => 'file 1 content',
+                'file2.ext2' => 'file 2 content',
+            ],
+            'dir2' => [
+                'file1.ext3' => 'file 3 content',
+                'file2.ext4' => 'file 4 content',
+            ],
+        ];
+        $this->createFileStructure([
+            $srcDirName => $files
+        ]);
+
+        $basePath = $this->testFilePath;
+        $srcDirName = $basePath . DIRECTORY_SEPARATOR . $srcDirName;
+        $dstDirName = $basePath . DIRECTORY_SEPARATOR . 'test_dst_dir';
+
+        //only with dir matching
+//        FileHelper::copyDirectory($srcDirName, $dstDirName, [
+//            'only' => [
+//                'dir1/'
+//            ]
+//        ]);
+//        $this->assertFileExists($dstDirName, 'Destination directory does not exist!');
+//        $this->assertFileExists($dstDirName . '/dir1');
+//        foreach ($files['dir1'] as $name => $content) {
+//            $fileName = $dstDirName . DIRECTORY_SEPARATOR . $name;
+//            $this->assertFileExists($fileName);
+//            $this->assertEquals($content, file_get_contents($fileName), 'Incorrect file content!');
+//        }
+//        $this->removeDir($dstDirName);
+
+        //with file matching
+        FileHelper::copyDirectory($srcDirName, $dstDirName, [
+            'only' => [
+                'dir1/*.ext1'
+            ]
+        ]);
+        $this->assertFileExists($dstDirName, 'Destination directory does not exist!');
+        $this->assertFileExists($dstDirName . '/dir1');
+        $this->assertFileExists($dstDirName . '/dir1/file1.ext1');
+        $this->assertEquals($files['dir1']['file1.ext1'], file_get_contents($dstDirName . '/dir1/file1.ext1'), 'Incorrect file content!');
+        $this->assertFileNotExists($dstDirName . '/dir1/file2.ext2');
+        $this->assertFileNotExists($dstDirName . '/dir2');
+    }
+
+    //test except
+
     public function testRemoveDirectory()
     {
         $dirName = 'test_dir_for_remove';

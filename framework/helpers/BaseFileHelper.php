@@ -273,6 +273,10 @@ class BaseFileHelper
             $from = $src . DIRECTORY_SEPARATOR . $file;
             $to = $dst . DIRECTORY_SEPARATOR . $file;
             if (static::filterPath($from, $options)) {
+                if (!is_dir($dst)) {
+                    static::createDirectory($dst, isset($options['dirMode']) ? $options['dirMode'] : 0775, true);
+                }
+
                 if (isset($options['beforeCopy']) && !call_user_func($options['beforeCopy'], $from, $to)) {
                     continue;
                 }

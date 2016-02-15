@@ -539,7 +539,7 @@ class AssetManager extends Component
             if (!isset($opts['afterCopy']) && $this->afterCopy !== null) {
                 $opts['afterCopy'] = $this->afterCopy;
             }
-            FileHelper::copyDirectory($src, $dstDir, $opts);
+            FileHelper::copyDirectory($src, $dstDir, $opts);//
         }
 
         return [$dstDir, $this->baseUrl . '/' . $dir];
