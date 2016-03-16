@@ -7,8 +7,8 @@
 
 namespace yii\base;
 
-use yii\helpers\StringHelper;
 use Yii;
+use yii\helpers\StringHelper;
 
 /**
  * Security provides a set of methods to handle common security-related tasks.
@@ -423,10 +423,12 @@ class Security extends Component
         return false;
     }
 
+    const DEV_RANDOM = '/dev/random';
     const DEV_URANDOM = '/dev/urandom';
     const SOURCE_LIBRE_SSL = 'LibreSSL';
     const SOURCE_MCRYPT = 'mcrypt';
     const SOURCE_OPEN_SSL = 'OpenSSL';
+    const SOURCE_RANDOM = 'random';
     const SOURCE_URANDOM = 'urandom';
     /**
      * @var string|null Identifies the random source of the last successful call of [[generateRandomKey]].
@@ -497,27 +499,38 @@ class Security extends Component
             $this->_randomSource = null;
         }
 
-        // If not on Windows, test for a /dev/urandom device.
+        // If not on Windows, test for a /dev/urandom device for Linux or /dev/random for others.
         if ($this->_randomSource === null && DIRECTORY_SEPARATOR === '/') {
-            // Check it for speacial character device protection mode. Do not follow
-            // symbolic link at '/dev/urandom', as such would be suspicious. With lstat()
-            // (as opposed to stat()) the test fails if it is.
-            $lstat = @lstat(self::DEV_URANDOM);
-            $urandomDevice = $lstat !== false && ($lstat['mode'] & 0170000) === 020000;
+            // Check it for special character device protection mode. Do not follow
+            // symbolic link at '/dev/random' or '/dev/urandom', as such would be suspicious.
+            // With lstat() (as opposed to stat()) the test fails if it is.
+            $lstat = @lstat(PHP_OS === 'Linux' ? self::DEV_URANDOM : self::DEV_RANDOM);
+            $useRandomDevice = $lstat !== false && ($lstat['mode'] & 0170000) === 020000;
         } else {
-            $urandomDevice = false;
+            $useRandomDevice = false;
         }
-        if ($this->_randomSource === self::SOURCE_URANDOM || $urandomDevice) {
-            $key = @file_get_contents(self::DEV_URANDOM, false, null, 0, $length);
+        if (
+            $this->_randomSource === self::SOURCE_URANDOM
+            || $this->_randomSource === self::SOURCE_RANDOM
+            || $useRandomDevice
+        ) {
+            $key = @file_get_contents(
+                PHP_OS === 'Linux' ? self::DEV_URANDOM : self::DEV_RANDOM,
+                false,
+                null,
+                0,
+                $length
+            );
 
             if ($key !== false && StringHelper::byteLength($key) === $length) {
-                $this->_randomSource = self::SOURCE_URANDOM;
+                $this->_randomSource = PHP_OS === 'Linux' ? self::SOURCE_URANDOM : self::SOURCE_RANDOM;
 
                 return $key;
             }
 
             $this->_randomSource = null;
         }
+
 
         // Since 5.4.0, openssl_random_pseudo_bytes() reads from CryptGenRandom on Windows instead
         // of using OpenSSL library. Don't use OpenSSL on other platforms.
